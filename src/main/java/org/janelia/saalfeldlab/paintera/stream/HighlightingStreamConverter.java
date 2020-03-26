@@ -7,29 +7,22 @@ import java.util.Map;
 import gnu.trove.map.TLongIntMap;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.scene.paint.Color;
 import net.imglib2.Volatile;
 import net.imglib2.converter.Converter;
-import net.imglib2.type.label.LabelMultisetType;
 import net.imglib2.type.label.VolatileLabelMultisetType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.IntegerType;
-import net.imglib2.type.numeric.RealType;
 import org.janelia.saalfeldlab.util.Colors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class HighlightingStreamConverter<T>
 		implements Converter<T, ARGBType>, SeedProperty, WithAlpha, ColorFromSegmentId, HideLockedSegments,
-		           UserSpecifiedColors
+		HideFlaggedSegments, UserSpecifiedColors
 {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -48,6 +41,8 @@ public abstract class HighlightingStreamConverter<T>
 
 	private final BooleanProperty hideLockedSegments = new SimpleBooleanProperty(true);
 
+	private final BooleanProperty hideFlaggedSegments = new SimpleBooleanProperty(true);
+
 	private final ObservableMap<Long, Color> userSpecifiedColors = FXCollections.observableHashMap();
 
 	private final ObservableMap<Long, Color> unmodifiableSpecifiedColors = FXCollections.unmodifiableObservableMap(
@@ -64,11 +59,13 @@ public abstract class HighlightingStreamConverter<T>
 		activeFragmentAlpha.addListener((obs, oldv, newv) -> stream.setActiveFragmentAlpha(newv.intValue()));
 		activeSegmentAlpha.addListener((obs, oldv, newv) -> stream.setActiveSegmentAlpha(newv.intValue()));
 		hideLockedSegments.addListener((obs, oldv, newv) -> stream.setHideLockedSegments(newv));
+		hideFlaggedSegments.addListener((obs, oldv, newv) -> stream.setHideFlaggedSegments(newv));
 		stream.setSeed(seed.get());
 		alpha.set(stream.getAlpha());
 		activeFragmentAlpha.set(stream.getActiveFragmentAlpha());
 		activeSegmentAlpha.set(stream.getActiveSegmentAlpha());
 		hideLockedSegments.set(stream.getHideLockedSegments());
+		hideFlaggedSegments.set(stream.getHideFlaggedSegments());
 		stream.colorFromSegmentIdProperty().bind(this.colorFromSegmentId);
 		stream.addListener(obs -> {
 			this.seed.set(stream.getSeed());
@@ -77,6 +74,7 @@ public abstract class HighlightingStreamConverter<T>
 			this.activeSegmentAlpha.set(stream.getActiveSegmentAlpha());
 			this.colorFromSegmentId.set(stream.getColorFromSegmentId());
 			this.hideLockedSegments.set(stream.getHideLockedSegments());
+			this.hideFlaggedSegments.set(stream.getHideFlaggedSegments());
 		});
 		stream.addListener(updateUserSpecifiedColors);
 	}
@@ -115,6 +113,11 @@ public abstract class HighlightingStreamConverter<T>
 	public BooleanProperty hideLockedSegmentsProperty()
 	{
 		return this.hideLockedSegments;
+	}
+
+	@Override
+	public BooleanProperty hideFlaggedSegmentsProperty() {
+		return this.hideFlaggedSegments;
 	}
 
 	public AbstractHighlightingARGBStream getStream()

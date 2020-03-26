@@ -11,7 +11,6 @@ import javafx.scene.control.CheckBox
 import javafx.scene.control.ColorPicker
 import javafx.scene.control.Label
 import javafx.scene.control.Slider
-import javafx.scene.control.Spinner
 import javafx.scene.control.TextField
 import javafx.scene.control.TitledPane
 import javafx.scene.control.Tooltip
@@ -19,12 +18,10 @@ import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Priority
 import javafx.scene.layout.Region
-import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.stage.Modality
 import javafx.util.converter.NumberStringConverter
-import org.janelia.saalfeldlab.fx.Buttons
 import org.janelia.saalfeldlab.fx.Labels
 import org.janelia.saalfeldlab.fx.TitledPaneExtensions
 import org.janelia.saalfeldlab.fx.ui.NumberField
@@ -181,6 +178,13 @@ class HighlightingStreamConverterConfigNode(private val converter: HighlightingS
 					hideLockedSegments.selectedProperty().bindBidirectional(converter.hideLockedSegmentsProperty())
 					contents.children.add(hideLockedSegments)
 				}
+
+                run {
+                    val hideFlaggedSegments = CheckBox("Hide flagged segments.")
+                    hideFlaggedSegments.tooltip = Tooltip("Hide flagged segments (toggle flag with E)")
+                    hideFlaggedSegments.selectedProperty().bindBidirectional(converter.hideFlaggedSegmentsProperty())
+                    contents.children.add(hideFlaggedSegments)
+                }
 
 				run {
 					val colorFromSegmentId = CheckBox("Color From segment Id.")

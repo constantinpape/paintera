@@ -67,7 +67,6 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 
 	protected boolean hideLockedSegments = true;
 
-	// TODO: handle correctly from the GUI
 	protected boolean hideFlaggedSegments = true;
 
 	protected SelectedSegments selectedSegments;
@@ -315,9 +314,21 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 		}
 	}
 
+	public void setHideFlaggedSegments(final boolean hideFlaggedSegments) {
+		if (hideFlaggedSegments != this.hideFlaggedSegments) {
+			this.hideFlaggedSegments = hideFlaggedSegments;
+			stateChanged();
+		}
+	}
+
 	public boolean getHideLockedSegments()
 	{
 		return this.hideLockedSegments;
+	}
+
+	public boolean getHideFlaggedSegments()
+	{
+		return this.hideFlaggedSegments;
 	}
 
 	public void specifyColorExplicitly(final long segmentId, final int color)
@@ -372,5 +383,4 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 	public SelectedSegments getSelectedSegments() {
 		return this.selectedSegments;
 	}
-
 }
