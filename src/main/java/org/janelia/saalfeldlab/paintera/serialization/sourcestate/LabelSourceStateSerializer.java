@@ -51,9 +51,10 @@ public class LabelSourceStateSerializer
 		final JsonObject map = super.serialize(state, type, context);
 		map.add(SELECTED_IDS_KEY, context.serialize(state.selectedIds(), state.selectedIds().getClass()));
 		map.add(ASSIGNMENT_KEY, SerializationHelpers.serializeWithClassInfo(state.assignment(), context));
-		map.add(
-				LabelSourceStateDeserializer.LOCKED_SEGMENTS_KEY,
+		map.add(LabelSourceStateDeserializer.LOCKED_SEGMENTS_KEY,
 				context.serialize(state.lockedSegments().lockedSegmentsCopy()));
+		map.add(LabelSourceStateSerializer.FLAGGED_SEGMENT_KEY,
+				context.serialize(state.flaggedSegments().flaggedSegmentsCopy()));
 		final ManagedMeshSettings managedMeshSettings = new ManagedMeshSettings(state.managedMeshSettings()
 				.getGlobalSettings());
 		managedMeshSettings.set(state.managedMeshSettings());
