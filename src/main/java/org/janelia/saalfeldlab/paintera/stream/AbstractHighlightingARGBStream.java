@@ -16,6 +16,7 @@ package org.janelia.saalfeldlab.paintera.stream;
 import java.lang.invoke.MethodHandles;
 
 import org.janelia.saalfeldlab.fx.ObservableWithListenersList;
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegments;
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegments;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedSegments;
 import org.slf4j.Logger;
@@ -66,9 +67,13 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 
 	protected boolean hideLockedSegments = true;
 
+	// TODO: handle correctly from the GUI
+	protected boolean hideFlaggedSegments = true;
+
 	protected SelectedSegments selectedSegments;
 
 	protected LockedSegments lockedSegments;
+	protected FlaggedSegments flaggedSegments;
 
 	private final BooleanProperty colorFromSegmentId = new SimpleBooleanProperty();
 
@@ -76,10 +81,12 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 
 	public AbstractHighlightingARGBStream(
 			final SelectedSegments selectedSegments,
-			final LockedSegments lockedSegments)
+			final LockedSegments lockedSegments,
+			final FlaggedSegments flaggedSegments)
 	{
 		this.selectedSegments = selectedSegments;
 		this.lockedSegments = lockedSegments;
+		this.flaggedSegments = flaggedSegments;
 		this.colorFromSegmentId.addListener((obs, oldv, newv) -> stateChanged());
 	}
 
@@ -115,6 +122,10 @@ public abstract class AbstractHighlightingARGBStream extends ObservableWithListe
 	public boolean isLockedSegment(final long id)
 	{
 		return lockedSegments.isLocked(selectedSegments.getAssignment().getSegment(id));
+	}
+
+	public boolean isFlaggedSegment(final long id) {
+		return flaggedSegments.isFlagged(selectedSegments.getAssignment().getSegment(id));
 	}
 
 	protected static int argb(final int r, final int g, final int b, final int alpha)

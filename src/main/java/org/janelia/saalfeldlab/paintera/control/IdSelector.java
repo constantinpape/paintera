@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 
 import org.janelia.saalfeldlab.fx.event.MouseClickFX;
 import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignment;
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegments;
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegments;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedIds;
 import org.janelia.saalfeldlab.paintera.data.DataSource;
@@ -164,6 +165,18 @@ public class IdSelector
 				lock.unlock(segment);
 			else
 				lock.lock(segment);
+	}
+
+	public void toggleFlag(final FragmentSegmentAssignment assignment, final FlaggedSegments flag) {
+		final long lastSelection = selectedIds.getLastSelection();
+		if (!Label.regular(lastSelection))
+			return;
+
+		final long segment = assignment.getSegment(lastSelection);
+		if (flag.isFlagged(segment))
+			flag.unflag(segment);
+		else
+			flag.flag(segment);
 	}
 
 	private abstract class SelectMaximumCount implements Consumer<MouseEvent>

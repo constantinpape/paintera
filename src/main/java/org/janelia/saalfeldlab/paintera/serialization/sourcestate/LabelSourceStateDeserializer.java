@@ -10,6 +10,7 @@ import org.janelia.saalfeldlab.n5.N5Writer;
 import org.janelia.saalfeldlab.paintera.composition.Composite;
 import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignmentState;
 import org.janelia.saalfeldlab.paintera.control.assignment.action.AssignmentAction;
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegmentsOnlyLocal;
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegmentsOnlyLocal;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedIds;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedSegments;
@@ -52,6 +53,8 @@ public class LabelSourceStateDeserializer<C extends HighlightingStreamConverter<
 	public static final String ASSIGNMENT_KEY = LabelSourceStateSerializer.ASSIGNMENT_KEY;
 
 	public static final String LOCKED_SEGMENTS_KEY = LabelSourceStateSerializer.LOCKED_SEGMENTS_KEY;
+
+	public static final String FLAGGED_SEGMENT_KEY = LabelSourceStateSerializer.FLAGGED_SEGMENT_KEY;
 
 	private final Arguments arguments;
 
@@ -106,6 +109,12 @@ public class LabelSourceStateDeserializer<C extends HighlightingStreamConverter<
 				.map(el -> (long[]) context.deserialize(el, long[].class))
 				.orElseGet(() -> new long[] {});
 
+		final long[] locallyFlaggedSegments = Optional
+				.ofNullable(map.get(FLAGGED_SEGMENT_KEY))
+				.map(el -> (long[]) context.deserialize(el, long[].class))
+				.orElseGet(() -> new long[] {});
+
+
 		final JsonObject assignmentMap                  = map.get(ASSIGNMENT_KEY).getAsJsonObject();
 		final FragmentSegmentAssignmentState assignment = tryDeserializeOrFallBackToN5(assignmentMap, context, source);
 
@@ -117,6 +126,8 @@ public class LabelSourceStateDeserializer<C extends HighlightingStreamConverter<
 		final IdService idService     = tryDeserializeIdServiceOrFallBacktoN5(idServiceMap, context, source);
 
 		final LockedSegmentsOnlyLocal lockedSegments = new LockedSegmentsOnlyLocal(locked -> {}, locallyLockedSegments);
+
+		final FlaggedSegmentsOnlyLocal flaggedSegments = new FlaggedSegmentsOnlyLocal(locked -> {}, locallyFlaggedSegments);
 
 		final AbstractHighlightingARGBStream stream = converter.getStream();
 		stream.setSelectedAndLockedSegments(
@@ -148,7 +159,8 @@ public class LabelSourceStateDeserializer<C extends HighlightingStreamConverter<
 				idService,
 				selectedIds,
 				meshManager,
-				lookup
+				lookup,
+				flaggedSegments
 		);
 
 		if (map.has(LabelSourceStateSerializer.MANAGED_MESH_SETTINGS_KEY))

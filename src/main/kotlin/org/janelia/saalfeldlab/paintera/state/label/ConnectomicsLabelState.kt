@@ -46,7 +46,7 @@ import org.janelia.saalfeldlab.paintera.composition.ARGBCompositeAlphaYCbCr
 import org.janelia.saalfeldlab.paintera.composition.Composite
 import org.janelia.saalfeldlab.paintera.config.input.KeyAndMouseBindings
 import org.janelia.saalfeldlab.paintera.control.ShapeInterpolationMode
-import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignmentState
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegmentsOnlyLocal
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegmentsOnlyLocal
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedIds
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedSegments
@@ -103,9 +103,9 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
 	val fragmentSegmentAssignment = backend.fragmentSegmentAssignment
 
 	val lockedSegments = LockedSegmentsOnlyLocal(Consumer {})
-	
+
     // TODO can we just re-use the LockedSegments functionality as is?
-    val flaggedSegments = LockedSegmentsOnlyLocal(Consumer {})
+    val flaggedSegments = FlaggedSegmentsOnlyLocal(Consumer {})
 
 	val selectedIds = SelectedIds()
 
@@ -116,7 +116,7 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
 	private val labelBlockLookup = labelBlockLookup ?: backend.createLabelBlockLookup(source)
 
     // TODO need to pass flaggedSegments here as well
-	private val stream = ModalGoldenAngleSaturatedHighlightingARGBStream(selectedSegments, lockedSegments)
+	private val stream = ModalGoldenAngleSaturatedHighlightingARGBStream(selectedSegments, lockedSegments, flaggedSegments)
 
 	private val converter = HighlightingStreamConverter.forType(stream, dataSource.type)
 	override fun converter(): HighlightingStreamConverter<T> = converter
@@ -143,7 +143,7 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
     }
 
     // TODO need to pass flaggedSegments here as well
-	private val idSelectorHandler = LabelSourceStateIdSelectorHandler(source, idService, selectedIds, fragmentSegmentAssignment, lockedSegments)
+	private val idSelectorHandler = LabelSourceStateIdSelectorHandler(source, idService, selectedIds, fragmentSegmentAssignment, lockedSegments, flaggedSegments)
 
 	private val mergeDetachHandler = LabelSourceStateMergeDetachHandler(source, selectedIds, fragmentSegmentAssignment, idService)
 
@@ -266,7 +266,8 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
 				BindingKeys.SELECT_ALL,
 				BindingKeys.SELECT_ALL_IN_CURRENT_VIEW,
 				BindingKeys.LOCK_SEGEMENT,
-				BindingKeys.NEXT_ID))
+				BindingKeys.NEXT_ID,
+                BindingKeys.FLAG_SEGEMENT))
 		handler.addHandler(mergeDetachHandler.viewerHandler(
 				paintera,
 				paintera.keyAndMouseBindings.getConfigFor(this),
@@ -590,6 +591,7 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
 				c.addCombination(NamedKeyCombination(SELECT_ALL, KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN)))
 				c.addCombination(NamedKeyCombination(SELECT_ALL_IN_CURRENT_VIEW, KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)))
 				c.addCombination(NamedKeyCombination(LOCK_SEGEMENT, KeyCodeCombination(KeyCode.L)))
+				c.addCombination(NamedKeyCombination(FLAG_SEGEMENT, KeyCodeCombination(KeyCode.E)))
 				c.addCombination(NamedKeyCombination(NEXT_ID, KeyCodeCombination(KeyCode.N)))
 				c.addCombination(NamedKeyCombination(COMMIT_DIALOG, KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN)))
 				c.addCombination(NamedKeyCombination(MERGE_ALL_SELECTED, KeyCodeCombination(KeyCode.ENTER, KeyCombination.CONTROL_DOWN)))
@@ -636,6 +638,7 @@ class ConnectomicsLabelState<D: IntegerType<D>, T>(
 			const val SELECT_ALL = "select all"
 			const val SELECT_ALL_IN_CURRENT_VIEW = "select all in current view"
 			const val LOCK_SEGEMENT = "lock segment"
+            const val FLAG_SEGEMENT = "flag segment"
 			const val NEXT_ID = "next id"
 			const val COMMIT_DIALOG = "commit dialog"
 			const val MERGE_ALL_SELECTED = "merge all selected"

@@ -1,7 +1,6 @@
 package org.janelia.saalfeldlab.paintera.state;
 
 import bdv.util.volatiles.VolatileTypeMatcher;
-import gnu.trove.set.hash.TLongHashSet;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
@@ -57,8 +56,7 @@ import org.janelia.saalfeldlab.paintera.control.ShapeInterpolationMode.ActiveSec
 import org.janelia.saalfeldlab.paintera.control.ShapeInterpolationMode.ModeState;
 import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignmentOnlyLocal;
 import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignmentState;
-import org.janelia.saalfeldlab.paintera.control.lock.LockedSegmentsOnlyLocal;
-import org.janelia.saalfeldlab.paintera.control.lock.LockedSegmentsState;
+import org.janelia.saalfeldlab.paintera.control.lock.*;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedIds;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedSegments;
 import org.janelia.saalfeldlab.paintera.data.DataSource;
@@ -108,6 +106,8 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 
 	private final LockedSegmentsState lockedSegments;
 
+	private final FlaggedSegmentsState flaggedSegments;
+
 	private final LabelBlockLookup labelBlockLookup;
 
 	private final LabelSourceStatePaintHandler<D> paintHandler;
@@ -138,7 +138,8 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 			final IdService idService,
 			final SelectedIds selectedIds,
 			final MeshManagerWithAssignmentForSegments meshManager,
-			final LabelBlockLookup labelBlockLookup)
+			final LabelBlockLookup labelBlockLookup,
+			final FlaggedSegmentsState flaggedSegments)
 	{
 		super(dataSource, converter, composite, name);
 		LOG.warn("Using deprectaed class LabelSourceState. Use ConnectomicsLabelState instead.");
@@ -146,6 +147,7 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 		this.maskForLabel = equalsMaskForType(d);
 		this.assignment = assignment;
 		this.lockedSegments = lockedSegments;
+		this.flaggedSegments = flaggedSegments;
 		this.selectedIds = selectedIds;
 		this.idService = idService;
 		this.meshManager = meshManager;
@@ -159,7 +161,7 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 						selectedIds,
 						maskForLabel)
 				: null;
-		this.idSelectorHandler = new LabelSourceStateIdSelectorHandler(dataSource, idService, selectedIds, assignment, lockedSegments);
+		this.idSelectorHandler = new LabelSourceStateIdSelectorHandler(dataSource, idService, selectedIds, assignment, lockedSegments, flaggedSegments);
 		this.mergeDetachHandler = new LabelSourceStateMergeDetachHandler(dataSource, selectedIds, assignment, idService);
 		this.commitHandler = new LabelSourceStateCommitHandler(this);
 		if (dataSource instanceof MaskedSource<?, ?>)
@@ -218,6 +220,11 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 	public LockedSegmentsState lockedSegments()
 	{
 		return this.lockedSegments;
+	}
+
+	public FlaggedSegmentsState flaggedSegments()
+	{
+		return this.flaggedSegments;
 	}
 
 	public void invalidateAllBlockCaches()
@@ -376,10 +383,12 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 		final FragmentSegmentAssignmentOnlyLocal assignment     = new FragmentSegmentAssignmentOnlyLocal(new FragmentSegmentAssignmentOnlyLocal.DoesNotPersist());
 		final SelectedSegments selectedSegments = new SelectedSegments(selectedIds, assignment);
 		final LockedSegmentsOnlyLocal            lockedSegments = new LockedSegmentsOnlyLocal(seg -> {});
+		final FlaggedSegmentsOnlyLocal flaggedSegments = new FlaggedSegmentsOnlyLocal(seg -> {});
 		final ModalGoldenAngleSaturatedHighlightingARGBStream stream = new
 				ModalGoldenAngleSaturatedHighlightingARGBStream(
 				selectedSegments,
-				lockedSegments);
+				lockedSegments,
+				flaggedSegments);
 
 		final MeshManagerWithAssignmentForSegments meshManager = MeshManagerWithAssignmentForSegments.fromBlockLookup(
 				dataSource,
@@ -401,7 +410,8 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 				new LocalIdService(maxId),
 				selectedIds,
 				meshManager,
-				labelBlockLookup
+				labelBlockLookup,
+				flaggedSegments
 		);
 	}
 
@@ -490,7 +500,8 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 				BindingKeys.SELECT_ALL,
 				BindingKeys.SELECT_ALL_IN_CURRENT_VIEW,
 				BindingKeys.LOCK_SEGEMENT,
-				BindingKeys.NEXT_ID));
+				BindingKeys.NEXT_ID,
+				BindingKeys.FLAG_SEGEMENT));
 		handler.addHandler(mergeDetachHandler.viewerHandler(
 				paintera,
 				paintera.getKeyAndMouseBindings().getConfigFor(this),
@@ -524,6 +535,7 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 		highlightingStreamConverter().getStream().addListener(obs -> paintera.orthogonalViews().requestRepaint());
 		selectedIds.addListener(obs -> paintera.orthogonalViews().requestRepaint());
 		lockedSegments.addListener(obs -> paintera.orthogonalViews().requestRepaint());
+		flaggedSegments.addListener(obs -> paintera.orthogonalViews().requestRepaint());
 		assignment.addListener(obs -> paintera.orthogonalViews().requestRepaint());
 		paintera.viewer3D().meshesGroup().getChildren().add(meshManager.getMeshesGroup());
 		assignment.addListener(o -> meshManager.setMeshesToSelection());
@@ -760,6 +772,8 @@ public class LabelSourceState<D extends IntegerType<D>, T>
 		public static final String SELECT_ALL_IN_CURRENT_VIEW = "select all in current view";
 
 		public static final String LOCK_SEGEMENT = "lock segment";
+
+		public static final String FLAG_SEGEMENT = "flag segment";
 
 		public static final String NEXT_ID = "next id";
 

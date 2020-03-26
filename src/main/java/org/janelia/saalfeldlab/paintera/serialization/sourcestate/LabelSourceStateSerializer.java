@@ -35,6 +35,8 @@ public class LabelSourceStateSerializer
 
 	public static final String LOCKED_SEGMENTS_KEY = "lockedSegments";
 
+	public static final String FLAGGED_SEGMENT_KEY = "flaggedSegments";
+
 	public static final String ID_SERVICE_KEY = "idService";
 
 	public static final String TYPE_KEY = "type";

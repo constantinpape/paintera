@@ -13,6 +13,7 @@
  */
 package org.janelia.saalfeldlab.paintera.stream;
 
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegments;
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegments;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedSegments;
 
@@ -29,9 +30,10 @@ abstract public class AbstractSaturatedHighlightingARGBStream extends AbstractHi
 {
 	public AbstractSaturatedHighlightingARGBStream(
 			final SelectedSegments selectedSegments,
-			final LockedSegments lockedSegments)
+			final LockedSegments lockedSegments,
+			final FlaggedSegments flaggedSegments)
 	{
-		super(selectedSegments, lockedSegments);
+		super(selectedSegments, lockedSegments, flaggedSegments);
 	}
 
 	final static protected int interpolate(final double[] xs, final int k, final int l, final double u, final double v)
@@ -72,6 +74,8 @@ abstract public class AbstractSaturatedHighlightingARGBStream extends AbstractHi
 		}
 		else if (isLockedSegment(fragmentId) && hideLockedSegments)
 		{
+			argb = argb & 0x00ffffff;
+		} else if (isFlaggedSegment(fragmentId) && hideFlaggedSegments) {
 			argb = argb & 0x00ffffff;
 		}
 		else

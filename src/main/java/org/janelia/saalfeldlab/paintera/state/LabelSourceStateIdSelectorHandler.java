@@ -18,6 +18,7 @@ import org.janelia.saalfeldlab.paintera.config.input.KeyAndMouseBindings;
 import org.janelia.saalfeldlab.paintera.control.IdSelector;
 import org.janelia.saalfeldlab.paintera.control.actions.LabelActionType;
 import org.janelia.saalfeldlab.paintera.control.assignment.FragmentSegmentAssignment;
+import org.janelia.saalfeldlab.paintera.control.lock.FlaggedSegments;
 import org.janelia.saalfeldlab.paintera.control.lock.LockedSegments;
 import org.janelia.saalfeldlab.paintera.control.paint.SelectNextId;
 import org.janelia.saalfeldlab.paintera.control.selection.SelectedIds;
@@ -46,6 +47,8 @@ public class LabelSourceStateIdSelectorHandler {
 
 	private final LockedSegments lockedSegments;
 
+	private final FlaggedSegments flaggedSegments;
+
 	private final HashMap<ViewerPanelFX, EventHandler<Event>> handlers = new HashMap<>();
 
 	public LabelSourceStateIdSelectorHandler(
@@ -53,12 +56,14 @@ public class LabelSourceStateIdSelectorHandler {
 			final IdService idService,
 			final SelectedIds selectedIds,
 			final FragmentSegmentAssignment assignment,
-			final LockedSegments lockedSegments) {
+			final LockedSegments lockedSegments,
+			final FlaggedSegments flaggedSegments) {
 		this.source = source;
 		this.idService = idService;
 		this.selectedIds = selectedIds;
 		this.assignment = assignment;
 		this.lockedSegments = lockedSegments;
+		this.flaggedSegments = flaggedSegments;
 	}
 
 	public EventHandler<Event> viewerHandler(
@@ -68,7 +73,8 @@ public class LabelSourceStateIdSelectorHandler {
 			final String bindingKeySelectAll,
 			final String bindingKeySelectAllInCurrentView,
 			final String bindingKeyLockSegment,
-			final String bindingKeyNextId) {
+			final String bindingKeyNextId,
+			final String bindingKeyFlagSegment) {
 		return event -> {
 			final EventTarget target = event.getTarget();
 			if (!(target instanceof Node))
@@ -86,7 +92,8 @@ public class LabelSourceStateIdSelectorHandler {
 							bindingKeySelectAll,
 							bindingKeySelectAllInCurrentView,
 							bindingKeyLockSegment,
-							bindingKeyNextId)).handle(event);
+							bindingKeyNextId,
+							bindingKeyFlagSegment)).handle(event);
 					return;
 				}
 				node = node.getParent();
@@ -102,7 +109,8 @@ public class LabelSourceStateIdSelectorHandler {
 			final String bindingKeySelectAll,
 			final String bindingKeySelectAllInCurrentView,
 			final String bindingKeyLockSegment,
-			final String bindingKeyNextId) {
+			final String bindingKeyNextId,
+			final String bindingKeyFlagSegment) {
 		final IdSelector selector = new IdSelector(source, selectedIds, vp, FOREGROUND_CHECK);
 		final DelegateEventHandlers.AnyHandler handler = DelegateEventHandlers.handleAny();
 		// TODO event handlers should probably not be on ANY/RELEASED but on PRESSED
@@ -130,6 +138,11 @@ public class LabelSourceStateIdSelectorHandler {
 				bindingKeyLockSegment,
 				e -> selector.toggleLock(assignment, lockedSegments),
 				e -> paintera.allowedActionsProperty().get().isAllowed(LabelActionType.Lock) && keyBindings.get(bindingKeyLockSegment).getPrimaryCombination().match(e)));
+		handler.addOnKeyPressed(EventFX.KEY_PRESSED(
+				bindingKeyFlagSegment,
+				e -> selector.toggleFlag(assignment, flaggedSegments),
+				e -> paintera.allowedActionsProperty().get().isAllowed(LabelActionType.Lock) && keyBindings.get(bindingKeyFlagSegment).getPrimaryCombination().match(e)
+				));
 
 		final SelectNextId nextId = new SelectNextId(idService, selectedIds);
 		handler.addOnKeyPressed(EventFX.KEY_PRESSED(
